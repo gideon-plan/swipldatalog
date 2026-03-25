@@ -1,10 +1,14 @@
 ## bridge.nim -- Register datalog predicates as SWI-Prolog foreign predicates.
 {.experimental: "strict_funcs".}
-import lattice
+import basis/code/choice
 
 type
-  DatalogQueryFn* = proc(predicate: string, args: seq[string]): Result[seq[seq[string]], BridgeError] {.raises: [].}
-  PrologAssertFn* = proc(term: string): Result[void, BridgeError] {.raises: [].}
+  BridgeError* = object of CatchableError
+
+
+type
+  DatalogQueryFn* = proc(predicate: string, args: seq[string]): Choice[seq[seq[string]]] {.raises: [].}
+  PrologAssertFn* = proc(term: string): Choice[bool] {.raises: [].}
 
   Bridge* = object
     query_fn*: DatalogQueryFn
@@ -15,6 +19,6 @@ proc new_bridge*(query_fn: DatalogQueryFn, assert_fn: PrologAssertFn): Bridge =
   Bridge(query_fn: query_fn, assert_fn: assert_fn)
 
 proc forward_query*(b: var Bridge, predicate: string,
-                    args: seq[string]): Result[seq[seq[string]], BridgeError] =
+                    args: seq[string]): Choice[seq[seq[string]]] =
   inc b.queries_forwarded
   b.query_fn(predicate, args)
